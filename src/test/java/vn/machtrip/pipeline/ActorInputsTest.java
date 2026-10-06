@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -63,5 +64,32 @@ class ActorInputsTest {
 
         assertThat(in.search("reviewdalat", 5).path("resultsPerPage").asInt()).isEqualTo(5);
         assertThat(in.sample("comments").path("postURLs")).hasSize(1);
+    }
+
+    @Test
+    void shippedInputsOnlyUseFieldsTypesAndEnumValuesOfTheRealActorSchema() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode schema = mapper.readTree(Path.of("src/test/resources/actor-input-schema.json").toFile())
+                .path("properties");
+        ActorInputs in = new ActorInputs(
+                new PipelineProperties("config", "", "", null, null, null, null, null, null), mapper);
+
+        for (JsonNode input : List.of(in.sample("search"), in.sample("comments"))) {
+            input.fields().forEachRemaining(e -> {
+                JsonNode def = schema.path(e.getKey());
+                assertThat(def.isMissingNode()).as("unknown actor input field " + e.getKey()).isFalse();
+                String type = def.path("type").asText();
+                JsonNode v = e.getValue();
+                assertThat(switch (type) {
+                    case "array" -> v.isArray();
+                    case "integer" -> v.isIntegralNumber();
+                    case "boolean" -> v.isBoolean();
+                    default -> v.isTextual();
+                }).as("type of " + e.getKey() + " should be " + type).isTrue();
+                if (def.has("enum")) {
+                    assertThat(def.get("enum")).as("enum values of " + e.getKey()).contains(v);
+                }
+            });
+        }
     }
 }

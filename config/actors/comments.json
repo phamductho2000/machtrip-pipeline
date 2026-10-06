@@ -1,18 +1,21 @@
 {
-  "_source": "Field names come from the PUBLISHED input schema of clockworks/tiktok-scraper (apify.com/clockworks/tiktok-scraper/input-schema, read 2026-10-06); not yet checked against the build OpenAPI definition or validate-input.",
+  "_source": "Field names and enum values checked against the actor build's real OpenAPI definition (src/test/resources/actor-input-schema.json, test-guarded). Not yet run through validate-input.",
   "_todo": [
     "Run `validate-input --kind comments` before the first real run.",
-    "TODO(user): the output schema of a comments run is UNKNOWN. Do the first real run with at most 3 videos and review the printed schema before the comment mapping is built.",
-    "TODO(user): the actor docs say actual comment counts may differ from commentsPerPost; check whether topLevelCommentsPerPost / maxRepliesPerComment are needed.",
-    "Per-run total cap = maxTotalChargeUsd + query param maxItems (pay-per-event actor: maxItems may not apply); the video list is already truncated by pipeline.comments.total-items-cap / per-video-cap."
+    "TODO(user): the output of a comments run is UNKNOWN. Per the real schema, commentsPerPost > 0 makes each video item carry a link to a SEPARATE comments dataset (field commentsDatasetUrl). So the run's default dataset probably holds video items, and the comments live in a second dataset that `work` does not read yet. Do the first real run with at most 3 videos and review the printed schema before the comment mapping is built.",
+    "The schema says the actual comment count may differ from commentsPerPost; topLevelCommentsPerPost / maxRepliesPerComment exist if needed (left out = actor default).",
+    "Per-run total cap = maxTotalChargeUsd + query param maxItems (may not apply to this pay-per-event actor); the video list is already truncated by pipeline.comments.total-items-cap / per-video-cap."
   ],
   "postURLs": "${videoUrls}",
   "commentsPerPost": "${maxPerVideo}",
+  "aiVideoDescription": false,
+  "aiVideoSummary": false,
   "downloadSubtitlesOptions": "NEVER_DOWNLOAD_SUBTITLES",
-  "shouldDownloadVideos": false,
-  "shouldDownloadCovers": false,
-  "shouldDownloadSlideshowImages": false,
+  "scrapeRelatedVideos": false,
+  "scrapeAdditionalAuthorMeta": false,
   "shouldDownloadAvatars": false,
+  "shouldDownloadCovers": false,
   "shouldDownloadMusicCovers": false,
-  "scrapeRelatedVideos": false
+  "shouldDownloadSlideshowImages": false,
+  "shouldDownloadVideos": false
 }

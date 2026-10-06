@@ -1,20 +1,27 @@
 {
-  "_source": "Field names/enums come from the PUBLISHED input schema of clockworks/tiktok-scraper (apify.com/clockworks/tiktok-scraper/input-schema, read 2026-10-06). They were NOT checked against the build's OpenAPI definition and NOT run through validate-input yet (APIFY_TOKEN was not set). Keys starting with '_' are notes and are never sent.",
+  "_source": "Same fields as the input of the real run that produced the dataset export (user-supplied, 2026-10-06), with hashtags/resultsPerPage turned into placeholders. Field names and enum values checked against the actor build's real OpenAPI definition (src/test/resources/actor-input-schema.json, test-guarded). Not yet run through validate-input. Keys starting with '_' are notes and are never sent.",
   "_todo": [
     "Run `validate-input --kind search` before the first real run.",
-    "TODO(user): confirm DOWNLOAD_SUBTITLES_ONLY is the option that yields videoMeta.subtitleLinks in your real exports (DOWNLOAD_SUBTITLES_AND_TRANSCRIBE uses the actor's paid speech-to-text, so it is deliberately NOT used).",
-    "TODO(user): decide searchSection / videoSearchSorting / videoSearchDateFilter / proxyCountryCode (some are 'charged' options per the actor page); they are left out so defaults apply.",
+    "downloadSubtitlesOptions is deliberately omitted (default NEVER_DOWNLOAD_SUBTITLES): the real export still had videoMeta.subtitleLinks and we download the VTT ourselves. Valid values are NEVER_DOWNLOAD_SUBTITLES | DOWNLOAD_SUBTITLES | DOWNLOAD_AND_TRANSCRIBE_VIDEOS_WITHOUT_SUBTITLES | TRANSCRIBE_ALL_VIDEOS; the last two use the actor's paid speech-to-text and must NOT be used.",
     "pay-per-event actor: query param maxItems does not apply, so the item cap is resultsPerPage (per hashtag) plus maxTotalChargeUsd."
   ],
   "hashtags": ["${hashtag}"],
   "resultsPerPage": "${limit}",
-  "downloadSubtitlesOptions": "DOWNLOAD_SUBTITLES_ONLY",
+  "aiVideoDescription": false,
+  "aiVideoSummary": false,
   "commentsPerPost": 0,
-  "shouldDownloadVideos": false,
-  "shouldDownloadCovers": false,
-  "shouldDownloadSlideshowImages": false,
-  "shouldDownloadAvatars": false,
-  "shouldDownloadMusicCovers": false,
+  "excludePinnedPosts": false,
+  "maxFollowersPerProfile": 0,
+  "maxFollowingPerProfile": 0,
+  "maxRepliesPerComment": 0,
+  "proxyCountryCode": "None",
+  "scrapeAdditionalAuthorMeta": false,
+  "scrapeRelatedSearchWords": false,
   "scrapeRelatedVideos": false,
-  "scrapeAdditionalAuthorMeta": false
+  "shouldDownloadAvatars": false,
+  "shouldDownloadCovers": false,
+  "shouldDownloadMusicCovers": false,
+  "shouldDownloadSlideshowImages": false,
+  "shouldDownloadVideos": false,
+  "topLevelCommentsPerPost": 0
 }
