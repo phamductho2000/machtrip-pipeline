@@ -1,0 +1,7 @@
+# Filters applied BEFORE any costly step (audio download, comments run).
+pipeline:
+  filters:
+    min-duration-sec: 30
+    allowed-languages: [vi]
+    skip-ads: true
+    skip-recrawl-days: 14   # comments: skip videos whose comments were crawled within the last N days

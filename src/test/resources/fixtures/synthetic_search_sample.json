@@ -1,0 +1,77 @@
+[
+  {
+    "id": "7000000000000000001",
+    "text": "Quan ca phe dep o Da Lat #reviewdalat",
+    "createTimeISO": "2026-09-01T10:00:00.000Z",
+    "webVideoUrl": "https://www.tiktok.com/@secretuser1/video/7000000000000000001",
+    "textLanguage": "vi",
+    "hashtags": [{"name": "reviewdalat"}, {"name": "cafe"}],
+    "playCount": 1000, "diggCount": 100, "collectCount": 10, "commentCount": 5, "shareCount": 2,
+    "isAd": false, "isSponsored": false,
+    "locationMeta": {"locationName": "Cafe Xanh", "address": "1 Hoa Binh", "city": "Da Lat", "countryCode": "VN", "locationId": "L1"},
+    "authorMeta": {"id": "1001", "name": "secretuser1"},
+    "videoMeta": {"duration": 45, "subtitleLinks": [
+      {"language": "vie-VN", "downloadLink": "__CDN__/cdn/v1.vtt", "source": "ASR", "version": "1::whisper_lid"},
+      {"language": "eng-US", "downloadLink": "__CDN__/cdn/v1-en.vtt", "source": "MT", "version": "1::mt"}
+    ]},
+    "musicMeta": {"musicOriginal": true, "playUrl": "__CDN__/cdn/v1.mp3"}
+  },
+  {
+    "id": "7000000000000000002",
+    "text": "Review quan an",
+    "createTimeISO": "2026-09-02T10:00:00.000Z",
+    "webVideoUrl": "https://www.tiktok.com/@secretuser2/video/7000000000000000002",
+    "textLanguage": "vi",
+    "hashtags": [{"name": "reviewdalat"}],
+    "playCount": 2000, "diggCount": 200, "collectCount": 20, "commentCount": 9, "shareCount": 4,
+    "isAd": false, "isSponsored": true,
+    "locationMeta": {"locationName": "Nha Hang Hoa", "address": "2 Phan Dinh Phung", "city": "Da Lat", "countryCode": "VN", "locationId": "L2"},
+    "authorMeta": {"id": "1002", "name": "secretuser2"},
+    "videoMeta": {"duration": 60, "subtitleLinks": [
+      {"language": "vie-VN", "downloadLink": "__CDN__/cdn/v2.vtt", "source": "ASR", "version": "1::big_caption"}
+    ]},
+    "musicMeta": {"musicOriginal": true, "playUrl": "__CDN__/cdn/v2.mp3"}
+  },
+  {
+    "id": "7000000000000000003",
+    "text": "Quang cao",
+    "createTimeISO": "2026-09-03T10:00:00.000Z",
+    "webVideoUrl": "https://www.tiktok.com/@secretuser3/video/7000000000000000003",
+    "textLanguage": "vi",
+    "hashtags": [],
+    "playCount": 3000, "diggCount": 300, "collectCount": 30, "commentCount": 0, "shareCount": 6,
+    "isAd": true, "isSponsored": false,
+    "locationMeta": {},
+    "authorMeta": {"id": "1003", "name": "secretuser3"},
+    "videoMeta": {"duration": 50, "subtitleLinks": []},
+    "musicMeta": {"musicOriginal": true, "playUrl": "__CDN__/cdn/v3.mp3"}
+  },
+  {
+    "id": "7000000000000000004",
+    "text": "Video ngan",
+    "createTimeISO": "2026-09-04T10:00:00.000Z",
+    "webVideoUrl": "https://www.tiktok.com/@secretuser4/video/7000000000000000004",
+    "textLanguage": "vi",
+    "hashtags": [{"name": "reviewdalat"}],
+    "playCount": 4000, "diggCount": 400, "collectCount": 40, "commentCount": 3, "shareCount": 8,
+    "isAd": false, "isSponsored": false,
+    "authorMeta": {"id": "1004", "name": "secretuser4"},
+    "videoMeta": {"duration": 10},
+    "musicMeta": {"musicOriginal": true, "playUrl": "__CDN__/cdn/v4.mp3"}
+  },
+  {
+    "id": "7000000000000000005",
+    "text": "Co phu de",
+    "createTimeISO": "2026-09-05T10:00:00.000Z",
+    "webVideoUrl": "https://www.tiktok.com/@secretuser5/video/7000000000000000005",
+    "textLanguage": "vi",
+    "hashtags": [{"name": "dalat"}],
+    "playCount": 5000, "diggCount": 500, "collectCount": 50, "commentCount": 12, "shareCount": 10,
+    "isAd": false, "isSponsored": false,
+    "authorMeta": {"id": "1005", "name": "secretuser5"},
+    "videoMeta": {"duration": 70, "subtitleLinks": [
+      {"language": "vie-VN", "downloadLink": "__CDN__/cdn/v5.vtt", "source": "ASR", "version": "2::whisper_lid"}
+    ]},
+    "musicMeta": {"musicOriginal": false}
+  }
+]

@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: machtrip-pipeline
+  main:
+    banner-mode: off
+  config:
+    # Filters live in their own file (config/filters.yml); override the directory with --pipeline.config-dir
+    import: optional:file:${pipeline.config-dir:config}/filters.yml
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/machtrip}
+    username: ${SPRING_DATASOURCE_USERNAME:}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    hikari:
+      # every unqualified table name resolves inside schema "pipeline" only
+      schema: pipeline
+      maximum-pool-size: 4
+  flyway:
+    schemas: pipeline
+    default-schema: pipeline          # history table lives here, never in public
+    table: flyway_schema_history
+    create-schemas: true
+    locations: classpath:db/migration
+
+server:
+  # The web server only starts for `serve-webhook` (see Application.main). Bind to loopback by default;
+  # put a tunnel/reverse proxy in front, or set SERVER_ADDRESS=0.0.0.0 deliberately.
+  address: 127.0.0.1
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+logging:
+  level:
+    root: WARN
+    vn.machtrip: INFO
+
+pipeline:
+  config-dir: config
+  hash-salt: ${HASH_SALT:}
+  raw-store-dir: ${RAW_STORE_DIR:./data/raw}
+  apify:
+    token: ${APIFY_TOKEN:}
+    base-url: https://api.apify.com/v2
+    actor-id: clockworks~tiktok-scraper
+    max-total-charge-usd: 1.0
+    timeout-sec: 600
+    wait-for-finish-sec: 60
+    page-size: 100
+    retry:
+      initial-backoff: 500ms
+      overall-timeout: 60s
+  webhook:
+    public-base-url: ${PUBLIC_WEBHOOK_BASE_URL:}
+    secret: ${WEBHOOK_SECRET:}
+  job:
+    max-attempts: 3
+    poll-interval: 5s
+    lock-timeout: 30m
+  reconcile:
+    stale-after: 15m
+  comments:
+    per-video-cap: 50
+    total-items-cap: 1000

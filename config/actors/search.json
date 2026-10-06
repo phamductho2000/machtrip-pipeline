@@ -1,0 +1,20 @@
+{
+  "_source": "Field names/enums come from the PUBLISHED input schema of clockworks/tiktok-scraper (apify.com/clockworks/tiktok-scraper/input-schema, read 2026-10-06). They were NOT checked against the build's OpenAPI definition and NOT run through validate-input yet (APIFY_TOKEN was not set). Keys starting with '_' are notes and are never sent.",
+  "_todo": [
+    "Run `validate-input --kind search` before the first real run.",
+    "TODO(user): confirm DOWNLOAD_SUBTITLES_ONLY is the option that yields videoMeta.subtitleLinks in your real exports (DOWNLOAD_SUBTITLES_AND_TRANSCRIBE uses the actor's paid speech-to-text, so it is deliberately NOT used).",
+    "TODO(user): decide searchSection / videoSearchSorting / videoSearchDateFilter / proxyCountryCode (some are 'charged' options per the actor page); they are left out so defaults apply.",
+    "pay-per-event actor: query param maxItems does not apply, so the item cap is resultsPerPage (per hashtag) plus maxTotalChargeUsd."
+  ],
+  "hashtags": ["${hashtag}"],
+  "resultsPerPage": "${limit}",
+  "downloadSubtitlesOptions": "DOWNLOAD_SUBTITLES_ONLY",
+  "commentsPerPost": 0,
+  "shouldDownloadVideos": false,
+  "shouldDownloadCovers": false,
+  "shouldDownloadSlideshowImages": false,
+  "shouldDownloadAvatars": false,
+  "shouldDownloadMusicCovers": false,
+  "scrapeRelatedVideos": false,
+  "scrapeAdditionalAuthorMeta": false
+}

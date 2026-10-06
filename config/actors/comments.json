@@ -1,0 +1,18 @@
+{
+  "_source": "Field names come from the PUBLISHED input schema of clockworks/tiktok-scraper (apify.com/clockworks/tiktok-scraper/input-schema, read 2026-10-06); not yet checked against the build OpenAPI definition or validate-input.",
+  "_todo": [
+    "Run `validate-input --kind comments` before the first real run.",
+    "TODO(user): the output schema of a comments run is UNKNOWN. Do the first real run with at most 3 videos and review the printed schema before the comment mapping is built.",
+    "TODO(user): the actor docs say actual comment counts may differ from commentsPerPost; check whether topLevelCommentsPerPost / maxRepliesPerComment are needed.",
+    "Per-run total cap = maxTotalChargeUsd + query param maxItems (pay-per-event actor: maxItems may not apply); the video list is already truncated by pipeline.comments.total-items-cap / per-video-cap."
+  ],
+  "postURLs": "${videoUrls}",
+  "commentsPerPost": "${maxPerVideo}",
+  "downloadSubtitlesOptions": "NEVER_DOWNLOAD_SUBTITLES",
+  "shouldDownloadVideos": false,
+  "shouldDownloadCovers": false,
+  "shouldDownloadSlideshowImages": false,
+  "shouldDownloadAvatars": false,
+  "shouldDownloadMusicCovers": false,
+  "scrapeRelatedVideos": false
+}
