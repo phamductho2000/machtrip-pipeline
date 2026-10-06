@@ -30,13 +30,15 @@ class CliIT extends AbstractIT {
 
     @Test
     void searchDryRunPrintsTheFullRequestAndMakesNoNetworkCall() {
-        Result r = run("search", "--hashtag", "reviewdalat", "--limit", "100", "--dry-run");
+        // --hashtag is repeatable (also accepts a comma-separated list); maxItems scales with hashtag count.
+        Result r = run("search", "--hashtag", "reviewdalat,avbc", "--limit", "100", "--dry-run");
 
         assertThat(r.exit()).isZero();
         assertThat(r.out()).contains("POST ", "/actors/clockworks~tiktok-scraper/runs",
-                "maxTotalChargeUsd=1.0", "timeout=600", "maxItems=100", "waitForFinish=60", "webhooks=",
+                "maxTotalChargeUsd=1.0", "timeout=600", "maxItems=200", "waitForFinish=60", "webhooks=",
                 "ACTOR.RUN.SUCCEEDED", "ACTOR.RUN.FAILED", "ACTOR.RUN.TIMED_OUT", "ACTOR.RUN.ABORTED",
-                "https://hooks.test.example/webhooks/apify/***", "\"hashtags\"", "reviewdalat", "\"resultsPerPage\" : 100");
+                "https://hooks.test.example/webhooks/apify/***", "\"hashtags\"", "reviewdalat", "avbc",
+                "\"resultsPerPage\" : 100");
         assertThat(r.out()).doesNotContain("test-secret-123").doesNotContain("test-token-abc");
         assertThat(WM.getAllServeEvents()).isEmpty();
         assertThat(count("SELECT count(*) FROM crawl_run")).isZero();

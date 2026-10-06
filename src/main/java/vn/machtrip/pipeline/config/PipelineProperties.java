@@ -14,6 +14,7 @@ public record PipelineProperties(
         @DefaultValue("./data/raw") String rawStoreDir,
         @DefaultValue Apify apify,
         @DefaultValue Webhook webhook,
+        @DefaultValue Api api,
         @DefaultValue Job job,
         @DefaultValue Reconcile reconcile,
         @DefaultValue Filters filters,
@@ -46,6 +47,14 @@ public record PipelineProperties(
         @Override
         public String toString() {
             return "Webhook[publicBaseUrl=" + publicBaseUrl + ", secret=***]";
+        }
+    }
+
+    /** Auth for the trigger API ({@code /api/**}): header {@code X-API-Key} must equal this, constant-time. */
+    public record Api(@DefaultValue("") String key) {
+        @Override
+        public String toString() {
+            return "Api[key=***]";
         }
     }
 

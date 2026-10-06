@@ -110,7 +110,9 @@ public class ApifyProvider implements CrawlerProvider {
     // ---- request construction (no network) --------------------------------------------------------------------
 
     public StartRequest searchRequest(SearchQuery q) {
-        return request("search", inputs.search(q.hashtag(), q.limit()), q.limit());
+        // resultsPerPage in the actor input is a per-hashtag cap; maxItems is informational for this pay-per-event
+        // actor (see config/actors/search.json notes), so report the total across all hashtags.
+        return request("search", inputs.search(q.hashtags(), q.limit()), q.limit() * q.hashtags().size());
     }
 
     public StartRequest commentsRequest(List<String> videoUrls, int maxPerVideo, int maxItems) {
@@ -229,6 +231,16 @@ public class ApifyProvider implements CrawlerProvider {
     @Override
     public Iterator<JsonNode> iterItems(RunRef run) {
         requireToken();
+        return pagedItems(offset -> datasetItemsUri(run.datasetId(), offset));
+    }
+
+    @Override
+    public Iterator<JsonNode> iterItemsFromUrl(String datasetUrl) {
+        requireToken();
+        return pagedItems(offset -> paginate(datasetUrl, offset));
+    }
+
+    private Iterator<JsonNode> pagedItems(java.util.function.IntFunction<URI> pageUri) {
         return new Iterator<>() {
             private Iterator<JsonNode> page = List.<JsonNode>of().iterator();
             private int offset = 0;
@@ -237,7 +249,7 @@ public class ApifyProvider implements CrawlerProvider {
             @Override
             public boolean hasNext() {
                 while (!page.hasNext() && !last) {
-                    JsonNode items = fetchPage(run.datasetId(), offset);
+                    JsonNode items = fetchPage(pageUri.apply(offset));
                     offset += items.size();
                     last = items.size() < cfg.pageSize();
                     page = items.iterator();
@@ -255,10 +267,24 @@ public class ApifyProvider implements CrawlerProvider {
         };
     }
 
-    private JsonNode fetchPage(String datasetId, int offset) {
-        URI uri = UriComponentsBuilder.fromUriString(cfg.baseUrl()).pathSegment("datasets", datasetId, "items")
+    private URI datasetItemsUri(String datasetId, int offset) {
+        return UriComponentsBuilder.fromUriString(cfg.baseUrl()).pathSegment("datasets", datasetId, "items")
                 .queryParam("format", "json").queryParam("offset", offset).queryParam("limit", cfg.pageSize())
                 .build().encode().toUri();
+    }
+
+    /**
+     * Appends pagination params to an already-complete URL (e.g. Apify's signed {@code commentsDatasetUrl}) by plain
+     * string concatenation instead of {@code UriComponentsBuilder...encode()}: the URL may already carry a
+     * percent-encoded query param (a signature), and re-encoding the whole thing would mangle it. offset/limit/format
+     * are plain ASCII, so they need no encoding.
+     */
+    private URI paginate(String url, int offset) {
+        String sep = url.contains("?") ? "&" : "?";
+        return URI.create(url + sep + "format=json&offset=" + offset + "&limit=" + cfg.pageSize());
+    }
+
+    private JsonNode fetchPage(URI uri) {
         JsonNode items = withRetry("read dataset", true, () -> get(uri));
         if (!items.isArray()) {
             throw new ApifyException(-1, null, "Unexpected dataset response (not a JSON array)");

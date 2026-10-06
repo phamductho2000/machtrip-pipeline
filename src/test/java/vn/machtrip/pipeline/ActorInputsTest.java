@@ -19,7 +19,7 @@ import vn.machtrip.pipeline.config.PipelineProperties;
 class ActorInputsTest {
 
     private static final String COMMENTS = "{\"postURLs\":\"${videoUrls}\",\"commentsPerPost\":\"${maxPerVideo}\"}";
-    private static final String SEARCH = "{\"_note\":\"TODO ignored\",\"hashtags\":[\"${hashtag}\"],\"resultsPerPage\":\"${limit}\"}";
+    private static final String SEARCH = "{\"_note\":\"TODO ignored\",\"hashtags\":\"${hashtags}\",\"resultsPerPage\":\"${limit}\"}";
 
     @TempDir Path dir;
 
@@ -27,7 +27,7 @@ class ActorInputsTest {
         Files.createDirectories(dir.resolve("actors"));
         Files.writeString(dir.resolve("actors/search.json"), search);
         Files.writeString(dir.resolve("actors/comments.json"), comments);
-        return new ActorInputs(new PipelineProperties(dir.toString(), "", "", null, null, null, null, null, null),
+        return new ActorInputs(new PipelineProperties(dir.toString(), "", "", null, null, null, null, null, null, null),
                 new ObjectMapper());
     }
 
@@ -35,8 +35,8 @@ class ActorInputsTest {
     void placeholdersAreFilledWithTypedValuesAndNotesAreStripped() throws IOException {
         ActorInputs in = load(SEARCH, COMMENTS);
 
-        var search = in.search("#reviewdalat", 100);
-        assertThat(search.toString()).isEqualTo("{\"hashtags\":[\"reviewdalat\"],\"resultsPerPage\":100}");
+        var search = in.search(List.of("#reviewdalat", "avbc"), 100);
+        assertThat(search.toString()).isEqualTo("{\"hashtags\":[\"reviewdalat\",\"avbc\"],\"resultsPerPage\":100}");
         var comments = in.comments(List.of("https://t/1", "https://t/2"), 50);
         assertThat(comments.toString())
                 .isEqualTo("{\"postURLs\":[\"https://t/1\",\"https://t/2\"],\"commentsPerPost\":50}");
@@ -44,15 +44,15 @@ class ActorInputsTest {
 
     @Test
     void searchInputMustEnforceTheItemLimitInsideTheActorInput() {
-        assertThatThrownBy(() -> load("{\"hashtags\":[\"${hashtag}\"]}", COMMENTS))
+        assertThatThrownBy(() -> load("{\"hashtags\":\"${hashtags}\"}", COMMENTS))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("limit");
     }
 
     @Test
     void unfilledTodoFieldsAndUnknownPlaceholdersFailAtStart() {
-        assertThatThrownBy(() -> load("{\"hashtags\":[\"${hashtag}\"],\"resultsPerPage\":\"${limit}\",\"x\":\"TODO\"}",
+        assertThatThrownBy(() -> load("{\"hashtags\":\"${hashtags}\",\"resultsPerPage\":\"${limit}\",\"x\":\"TODO\"}",
                 COMMENTS)).hasMessageContaining("TODO");
-        assertThatThrownBy(() -> load("{\"hashtags\":[\"${hashtag}\"],\"resultsPerPage\":\"${limit}\",\"x\":\"${nope}\"}",
+        assertThatThrownBy(() -> load("{\"hashtags\":\"${hashtags}\",\"resultsPerPage\":\"${limit}\",\"x\":\"${nope}\"}",
                 COMMENTS)).hasMessageContaining("nope");
         assertThatThrownBy(() -> load("not json", COMMENTS)).isInstanceOf(IllegalStateException.class);
     }
@@ -60,9 +60,9 @@ class ActorInputsTest {
     @Test
     void shippedConfigFilesAreValid() {
         ActorInputs in = new ActorInputs(
-                new PipelineProperties("config", "", "", null, null, null, null, null, null), new ObjectMapper());
+                new PipelineProperties("config", "", "", null, null, null, null, null, null, null), new ObjectMapper());
 
-        assertThat(in.search("reviewdalat", 5).path("resultsPerPage").asInt()).isEqualTo(5);
+        assertThat(in.search(List.of("reviewdalat"), 5).path("resultsPerPage").asInt()).isEqualTo(5);
         assertThat(in.sample("comments").path("postURLs")).hasSize(1);
     }
 
@@ -72,7 +72,7 @@ class ActorInputsTest {
         JsonNode schema = mapper.readTree(Path.of("src/test/resources/actor-input-schema.json").toFile())
                 .path("properties");
         ActorInputs in = new ActorInputs(
-                new PipelineProperties("config", "", "", null, null, null, null, null, null), mapper);
+                new PipelineProperties("config", "", "", null, null, null, null, null, null, null), mapper);
 
         for (JsonNode input : List.of(in.sample("search"), in.sample("comments"))) {
             input.fields().forEachRemaining(e -> {

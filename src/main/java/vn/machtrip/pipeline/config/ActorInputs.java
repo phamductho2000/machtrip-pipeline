@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 public class ActorInputs {
 
     private static final Pattern PLACEHOLDER = Pattern.compile("\\$\\{(\\w+)}");
-    private static final Set<String> SEARCH_VARS = Set.of("hashtag", "limit");
+    private static final Set<String> SEARCH_VARS = Set.of("hashtags", "limit");
     private static final Set<String> COMMENTS_VARS = Set.of("videoUrls", "maxPerVideo");
 
     private static final JsonNodeFactory F = JsonNodeFactory.instance;
@@ -41,9 +41,10 @@ public class ActorInputs {
         this.comments = load(mapper, dir.resolve("comments.json"), COMMENTS_VARS, COMMENTS_VARS);
     }
 
-    public ObjectNode search(String hashtag, int limit) {
-        return resolveTop(search, Map.of("hashtag", F.textNode(hashtag.replaceFirst("^#", "")),
-                "limit", F.numberNode(limit)));
+    public ObjectNode search(List<String> hashtags, int limit) {
+        ArrayNode tags = F.arrayNode();
+        hashtags.forEach(h -> tags.add(h.replaceFirst("^#", "")));
+        return resolveTop(search, Map.of("hashtags", tags, "limit", F.numberNode(limit)));
     }
 
     public ObjectNode comments(List<String> videoUrls, int maxPerVideo) {
@@ -55,7 +56,7 @@ public class ActorInputs {
     /** Sample inputs for validate-input; values are throwaway. */
     public ObjectNode sample(String kind) {
         return switch (kind) {
-            case "search" -> search("reviewdalat", 1);
+            case "search" -> search(List.of("reviewdalat"), 1);
             case "comments" -> comments(List.of("https://www.tiktok.com/@example/video/1234567890123456789"), 1);
             default -> throw new IllegalArgumentException("kind must be search or comments");
         };

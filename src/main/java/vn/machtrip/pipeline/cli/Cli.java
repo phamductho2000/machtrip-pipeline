@@ -2,6 +2,7 @@ package vn.machtrip.pipeline.cli;
 
 import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
@@ -54,17 +55,19 @@ public class Cli implements Runnable {
     }
 
     @Component
-    @Command(name = "search", description = "Start an Apify search run for a hashtag")
+    @Command(name = "search", description = "Start an Apify search run for one or more hashtags")
     static class Search extends Cmd {
-        @Option(names = "--hashtag", required = true) String hashtag;
-        @Option(names = "--limit", required = true, description = "max videos for this run") int limit;
+        @Option(names = "--hashtag", required = true, split = ",",
+                description = "repeatable (--hashtag a --hashtag b) or comma-separated (--hashtag a,b)")
+        List<String> hashtags;
+        @Option(names = "--limit", required = true, description = "max videos per hashtag for this run") int limit;
         @Option(names = "--dry-run", description = "print the exact request, make no network call") boolean dryRun;
         @Autowired ApifyProvider apify;
         @Autowired CrawlService crawl;
 
         @Override
         public Integer call() {
-            SearchQuery q = new SearchQuery(hashtag, limit);
+            SearchQuery q = new SearchQuery(hashtags, limit);
             if (dryRun) {
                 out().println(apify.describe(apify.searchRequest(q)));
                 out().println("DRY RUN: no network call was made.");

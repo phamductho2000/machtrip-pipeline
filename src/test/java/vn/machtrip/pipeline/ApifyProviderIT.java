@@ -47,7 +47,7 @@ class ApifyProviderIT extends AbstractIT {
     void startRunAlwaysCarriesCostCapsAndWebhookAndInputLimit() throws Exception {
         stubStart(201, runJson("RUN1", "RUNNING", "0"));
 
-        RunRef ref = provider.startSearch(new SearchQuery("#reviewdalat", 100));
+        RunRef ref = provider.startSearch(new SearchQuery(List.of("#reviewdalat"), 100));
 
         assertThat(ref.runId()).isEqualTo("RUN1");
         assertThat(ref.datasetId()).isEqualTo("ds-RUN1");
@@ -88,7 +88,7 @@ class ApifyProviderIT extends AbstractIT {
 
     @Test
     void dryRunDescriptionHidesSecretsAndNeedsNoNetwork() {
-        String text = provider.describe(provider.searchRequest(new SearchQuery("reviewdalat", 100)));
+        String text = provider.describe(provider.searchRequest(new SearchQuery(List.of("reviewdalat"), 100)));
 
         assertThat(text).contains("maxTotalChargeUsd=1.0", "timeout=600", "maxItems=100", "ACTOR.RUN.TIMED_OUT",
                 "resultsPerPage", "Bearer ***");
@@ -106,7 +106,7 @@ class ApifyProviderIT extends AbstractIT {
     void startErrorTypesMapToClearNonRetriedErrors(int status, String type, String expected) {
         stubStart(status, "{\"error\":{\"type\":\"" + type + "\",\"message\":\"server detail\"}}");
 
-        assertThatThrownBy(() -> provider.startSearch(new SearchQuery("x", 1)))
+        assertThatThrownBy(() -> provider.startSearch(new SearchQuery(List.of("x"), 1)))
                 .isInstanceOfSatisfying(ApifyException.class, e -> {
                     assertThat(e.type()).isEqualTo(type);
                     assertThat(e.httpStatus()).isEqualTo(status);
@@ -120,7 +120,7 @@ class ApifyProviderIT extends AbstractIT {
     void rateLimitIsRetriedWithBackoffUntilTheOverallTimeout() {
         stubStart(429, "{\"error\":{\"type\":\"rate-limit-exceeded\",\"message\":\"slow down\"}}");
 
-        assertThatThrownBy(() -> provider.startSearch(new SearchQuery("x", 1)))
+        assertThatThrownBy(() -> provider.startSearch(new SearchQuery(List.of("x"), 1)))
                 .isInstanceOfSatisfying(ApifyException.class, e -> {
                     assertThat(e.type()).isEqualTo("rate-limit-exceeded");
                     assertThat(e.getMessage()).contains("rate limit exceeded");
@@ -137,7 +137,7 @@ class ApifyProviderIT extends AbstractIT {
         WM.stubFor(post(urlPathEqualTo(RUNS)).inScenario("rl").whenScenarioStateIs("ok")
                 .willReturn(aResponse().withStatus(201).withBody(runJson("RUN2", "RUNNING", "0"))));
 
-        assertThat(provider.startSearch(new SearchQuery("x", 1)).runId()).isEqualTo("RUN2");
+        assertThat(provider.startSearch(new SearchQuery(List.of("x"), 1)).runId()).isEqualTo("RUN2");
         WM.verify(2, postRequestedFor(urlPathEqualTo(RUNS)));
     }
 
@@ -145,7 +145,7 @@ class ApifyProviderIT extends AbstractIT {
     void serverErrorOnStartIsNotRetriedBecauseTheRunMayExist() {
         stubStart(503, "{\"error\":{\"type\":\"internal\",\"message\":\"oops\"}}");
 
-        assertThatThrownBy(() -> provider.startSearch(new SearchQuery("x", 1))).isInstanceOf(ApifyException.class);
+        assertThatThrownBy(() -> provider.startSearch(new SearchQuery(List.of("x"), 1))).isInstanceOf(ApifyException.class);
         WM.verify(1, postRequestedFor(urlPathEqualTo(RUNS)));
     }
 

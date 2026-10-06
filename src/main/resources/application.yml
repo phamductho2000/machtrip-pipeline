@@ -56,6 +56,9 @@ pipeline:
   webhook:
     public-base-url: ${PUBLIC_WEBHOOK_BASE_URL:}
     secret: ${WEBHOOK_SECRET:}
+  api:
+    # Every request under /api/** must send header 'X-API-Key' equal to this. Blank = API refuses all requests.
+    key: ${API_KEY:}
   job:
     max-attempts: 3
     poll-interval: 5s

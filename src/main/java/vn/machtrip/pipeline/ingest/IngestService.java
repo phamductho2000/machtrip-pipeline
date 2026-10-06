@@ -9,6 +9,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
@@ -34,14 +36,16 @@ public class IngestService {
     private final JdbcClient jdbc;
     private final CrawlerProvider provider;
     private final VideoIngestor videos;
+    private final CommentIngestor comments;
     private final RawStore rawStore;
     private final ObjectMapper mapper;
 
-    public IngestService(JdbcClient jdbc, CrawlerProvider provider, VideoIngestor videos, RawStore rawStore,
-                         ObjectMapper mapper) {
+    public IngestService(JdbcClient jdbc, CrawlerProvider provider, VideoIngestor videos, CommentIngestor comments,
+                         RawStore rawStore, ObjectMapper mapper) {
         this.jdbc = jdbc;
         this.provider = provider;
         this.videos = videos;
+        this.comments = comments;
         this.rawStore = rawStore;
         this.mapper = mapper;
     }
@@ -125,12 +129,19 @@ public class IngestService {
                 }
             }
         } else {
-            // Comment output schema is unknown: keep the raw data and write a values-free schema report for review.
+            // The comments run's own dataset holds video items, not comments: Apify puts the actual comments in a
+            // separate dataset per commentsDatasetUrl (see config/actors/comments.json). Schema of THIS dataset is
+            // still probed/reported below since it is not a fixed contract either.
             SchemaProbe probe = new SchemaProbe();
+            Set<String> commentDatasetUrls = new LinkedHashSet<>();
             try (RawStore.Writer raw = live ? rawStore.open(runName) : null) {
                 while (items.hasNext()) {
                     JsonNode item = items.next();
                     probe.add(item);
+                    String commentsUrl = VideoIngestor.text(item, "commentsDatasetUrl");
+                    if (commentsUrl != null) {
+                        commentDatasetUrls.add(commentsUrl);
+                    }
                     if (raw != null) {
                         raw.add(item);
                         jdbc.sql("""
@@ -148,6 +159,22 @@ public class IngestService {
             String report = probe.render();
             writeSchemaReport(runName, report);
             log.info("Comments output schema (field paths and types only):\n{}", report);
+
+            // Only for a real worker run: ingestFile (offline/--file) never touches the network.
+            if (live) {
+                for (String url : commentDatasetUrls) {
+                    Iterator<JsonNode> commentItems = provider.iterItemsFromUrl(url);
+                    while (commentItems.hasNext()) {
+                        if (comments.ingest(commentItems.next())) {
+                            ingested++;
+                        }
+                    }
+                }
+                if (!commentDatasetUrls.isEmpty()) {
+                    log.info("Fetched {} comment dataset(s) from commentsDatasetUrl, ingested {} comments",
+                            commentDatasetUrls.size(), ingested);
+                }
+            }
         }
         jdbc.sql("UPDATE crawl_run SET item_count = :n WHERE id = :id").param("n", count).param("id", crawlRunId)
                 .update();

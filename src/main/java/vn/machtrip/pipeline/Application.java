@@ -1,5 +1,7 @@
 package vn.machtrip.pipeline;
 
+import java.util.TimeZone;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeGenerator;
@@ -22,6 +24,11 @@ public class Application {
      * only {@code serve-webhook} starts one.
      */
     public static void main(String[] args) {
+        // The pgjdbc driver sends the JVM default zone as a startup parameter. On a host whose OS timezone is
+        // "SE Asia Standard Time" the JVM resolves it to the legacy IANA alias "Asia/Saigon", which some Postgres
+        // builds reject outright ("invalid value for parameter TimeZone"), killing every connection before any SQL
+        // runs. Nothing here is timezone-sensitive (DB uses `now()`/timestamptz server-side), so force UTC globally.
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         boolean serve = args.length > 0 && args[0].equals("serve-webhook");
         SpringApplication app = new SpringApplication(Application.class);
         app.setWebApplicationType(serve ? WebApplicationType.SERVLET : WebApplicationType.NONE);

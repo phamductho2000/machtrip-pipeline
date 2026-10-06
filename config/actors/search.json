@@ -5,7 +5,7 @@
     "downloadSubtitlesOptions is deliberately omitted (default NEVER_DOWNLOAD_SUBTITLES): the real export still had videoMeta.subtitleLinks and we download the VTT ourselves. Valid values are NEVER_DOWNLOAD_SUBTITLES | DOWNLOAD_SUBTITLES | DOWNLOAD_AND_TRANSCRIBE_VIDEOS_WITHOUT_SUBTITLES | TRANSCRIBE_ALL_VIDEOS; the last two use the actor's paid speech-to-text and must NOT be used.",
     "pay-per-event actor: query param maxItems does not apply, so the item cap is resultsPerPage (per hashtag) plus maxTotalChargeUsd."
   ],
-  "hashtags": ["${hashtag}"],
+  "hashtags": "${hashtags}",
   "resultsPerPage": "${limit}",
   "aiVideoDescription": false,
   "aiVideoSummary": false,

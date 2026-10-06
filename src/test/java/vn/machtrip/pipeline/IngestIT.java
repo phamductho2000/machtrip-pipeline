@@ -217,7 +217,9 @@ class IngestIT extends AbstractIT {
     }
 
     @Test
-    void commentRunsKeepRawDataAndWriteAValuesFreeSchemaReport() throws Exception {
+    void commentRunsWithoutACommentsDatasetUrlOnlyKeepRawDataAndWriteASchemaReport() throws Exception {
+        // This dataset's items have no commentsDatasetUrl field (an unexpected/older actor response shape), so there
+        // is nothing to fetch comments from; the schema report is still written either way, for review.
         Path comments = tmp.resolve("comments.json");
         Files.writeString(comments, "[{\"cid\":\"c1\",\"text\":\"very secret words\",\"user\":{\"uniqueId\":\"someone\"}},"
                 + "{\"cid\":\"c2\",\"text\":\"more\",\"diggCount\":3}]");
@@ -227,10 +229,84 @@ class IngestIT extends AbstractIT {
         worker.run(true);
 
         assertThat(jdbc.sql("SELECT status FROM job").query(String.class).single()).isEqualTo("done");
-        assertThat(count("SELECT count(*) FROM comment")).as("mapping is built only after schema review").isZero();
+        assertThat(count("SELECT count(*) FROM comment")).as("no commentsDatasetUrl field to fetch from").isZero();
         String report = Files.readString(RAW_DIR.resolve("RUNK.schema.txt"));
         assertThat(report).contains("items: 2", "cid : string (in 2)", "user.uniqueId : string (in 1)",
                 "diggCount : number (in 1)").doesNotContain("very secret words").doesNotContain("someone");
+    }
+
+    @Test
+    void commentsDatasetUrlIsFetchedAndMappedToCommentRows() throws Exception {
+        jdbc.sql("""
+                INSERT INTO video (tiktok_id, web_video_url)
+                VALUES ('7000000000000000009', 'https://www.tiktok.com/@someone/video/7000000000000000009')""")
+                .update();
+
+        // The comments run's own (default) dataset: one video item pointing at a separate comments dataset.
+        Path defaultDs = tmp.resolve("comments-default.json");
+        Files.writeString(defaultDs, mapper.createArrayNode().add(mapper.createObjectNode()
+                .put("id", "7000000000000000009")
+                .put("commentsDatasetUrl", WM.baseUrl() + "/v2/datasets/ds-COMMENTS/items?signature=abc"))
+                .toString());
+        stubDataset("ds-RUNM", defaultDs);
+
+        // The sub-dataset commentsDatasetUrl points at: the actual comments, real-shape (one top-level, one reply).
+        var top = mapper.createObjectNode().put("cid", "cmt1")
+                .put("submittedVideoUrl", "https://www.tiktok.com/@someone/video/7000000000000000009")
+                .put("uid", "user-1").put("text", "hello").put("diggCount", 5).put("replyCommentTotal", 2)
+                .put("createTimeISO", "2026-10-04T10:17:09.000Z");
+        var reply = mapper.createObjectNode().put("cid", "cmt2")
+                .put("videoWebUrl", "https://www.tiktok.com/@someone/video/7000000000000000009")
+                .put("uid", "user-2").put("text", "world").put("repliesToId", "cmt1");
+        Path commentDs = tmp.resolve("comments-sub.json");
+        Files.writeString(commentDs, mapper.createArrayNode().add(top).add(reply).toString());
+        stubDataset("ds-COMMENTS", commentDs);
+
+        queueJob("RUNM", "comments");
+        worker.run(true);
+
+        assertThat(count("SELECT count(*) FROM comment")).isEqualTo(2);
+        var row = jdbc.sql("""
+                SELECT video_id, author_hash, text, like_count, reply_count, parent_id, created_at
+                FROM comment WHERE id = 'cmt1'""")
+                .query((rs, n) -> new Object[]{rs.getString(1), rs.getString(2), rs.getString(3), rs.getLong(4),
+                        rs.getLong(5), rs.getString(6), rs.getTimestamp(7)}).single();
+        assertThat(row[0]).isEqualTo("7000000000000000009");
+        assertThat(row[1]).isEqualTo(sha256Hex("test-salt" + "user-1"));
+        assertThat(row[2]).isEqualTo("hello");
+        assertThat(row[3]).isEqualTo(5L);
+        assertThat(row[4]).isEqualTo(2L);
+        assertThat(row[5]).isNull();
+        assertThat(row[6]).isNotNull();
+
+        var replyRow = jdbc.sql("SELECT author_hash, parent_id FROM comment WHERE id = 'cmt2'")
+                .query((rs, n) -> new String[]{rs.getString(1), rs.getString(2)}).single();
+        assertThat(replyRow[0]).isEqualTo(sha256Hex("test-salt" + "user-2"));
+        assertThat(replyRow[1]).isEqualTo("cmt1");
+    }
+
+    @Test
+    void commentWithUnresolvableVideoIsSkippedWithoutFailingTheJob() throws Exception {
+        Path defaultDs = tmp.resolve("comments-default2.json");
+        Files.writeString(defaultDs, mapper.createArrayNode().add(mapper.createObjectNode()
+                .put("id", "irrelevant")
+                .put("commentsDatasetUrl", WM.baseUrl() + "/v2/datasets/ds-COMMENTS2/items"))
+                .toString());
+        stubDataset("ds-RUNN", defaultDs);
+
+        // No video "9999999999999999999" was ever crawled -> the FK has nothing to attach this comment to.
+        var orphan = mapper.createObjectNode().put("cid", "cmt-orphan")
+                .put("submittedVideoUrl", "https://www.tiktok.com/@nobody/video/9999999999999999999")
+                .put("uid", "user-3").put("text", "lost");
+        Path commentDs = tmp.resolve("comments-sub2.json");
+        Files.writeString(commentDs, mapper.createArrayNode().add(orphan).toString());
+        stubDataset("ds-COMMENTS2", commentDs);
+
+        queueJob("RUNN", "comments");
+
+        assertThat(worker.run(true)).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT status FROM job").query(String.class).single()).isEqualTo("done");
+        assertThat(count("SELECT count(*) FROM comment")).isZero();
     }
 
     // ---- crawl_run / job lifecycle ----------------------------------------------------------------------------

@@ -1,5 +1,8 @@
 -- Everything this repo owns lives in schema "pipeline". Never reference another schema here.
-CREATE SCHEMA IF NOT EXISTS pipeline;
+-- The schema itself is created by spring.flyway.create-schemas=true (application.yml), not here: that path checks
+-- for an existing schema before creating one, whereas Postgres's own CREATE SCHEMA IF NOT EXISTS still requires
+-- CREATE on the database even when the schema already exists -- a problem on a shared DB where schema "pipeline"
+-- is pre-created and owned by this role, but the database itself belongs to another (e.g. the backend's role).
 
 CREATE TABLE pipeline.crawl_run (
     id                   bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

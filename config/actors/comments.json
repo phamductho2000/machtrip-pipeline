@@ -2,12 +2,13 @@
   "_source": "Field names and enum values checked against the actor build's real OpenAPI definition (src/test/resources/actor-input-schema.json, test-guarded). Not yet run through validate-input.",
   "_todo": [
     "Run `validate-input --kind comments` before the first real run.",
-    "TODO(user): the output of a comments run is UNKNOWN. Per the real schema, commentsPerPost > 0 makes each video item carry a link to a SEPARATE comments dataset (field commentsDatasetUrl). So the run's default dataset probably holds video items, and the comments live in a second dataset that `work` does not read yet. Do the first real run with at most 3 videos and review the printed schema before the comment mapping is built.",
-    "The schema says the actual comment count may differ from commentsPerPost; topLevelCommentsPerPost / maxRepliesPerComment exist if needed (left out = actor default).",
+    "CONFIRMED (real run 2026-10-06, 2 videos, commentsPerPost=50): the default dataset holds VIDEO items, not comments. Each item carries commentsDatasetUrl, a separate dataset shared by all videos of that run. `work` now fetches it (ApifyProvider.iterItemsFromUrl, CommentIngestor) and maps items into pipeline.comment by the numeric id parsed from submittedVideoUrl/videoWebUrl; a comment for a video not in pipeline.video is skipped, not fatal. Reads from that sub-dataset are billed as Apify storage-operation reads (~$0.0004/1000), separate from and far smaller than the run's own pay-per-event cost.",
+    "The schema says the actual comment count may differ from commentsPerPost. First real run (commentsPerPost=50, no maxRepliesPerComment) returned zero reply items even though replyCommentTotal > 0 on top-level comments -- so maxRepliesPerComment=5 was added (2026-10-06) to actually fetch some, as a small test. Per Apify's own actor docs: topLevelCommentsPerPost 'only applies to profile searches' (we use postURLs, so it would be a no-op -- left out); maxRepliesPerComment caps replies per top-level comment, same pay-per-event pricing as any other item, so it is NOT free and scales with how many comments actually have replies.",
     "Per-run total cap = maxTotalChargeUsd + query param maxItems (may not apply to this pay-per-event actor); the video list is already truncated by pipeline.comments.total-items-cap / per-video-cap."
   ],
   "postURLs": "${videoUrls}",
   "commentsPerPost": "${maxPerVideo}",
+  "maxRepliesPerComment": 5,
   "aiVideoDescription": false,
   "aiVideoSummary": false,
   "downloadSubtitlesOptions": "NEVER_DOWNLOAD_SUBTITLES",
