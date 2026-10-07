@@ -20,6 +20,7 @@
         <java.version>21</java.version>
         <picocli.version>4.7.7</picocli.version>
         <wiremock.version>3.13.2</wiremock.version>
+        <json-schema-validator.version>1.5.9</json-schema-validator.version>
     </properties>
 
     <dependencies>
@@ -53,6 +54,13 @@
             <groupId>info.picocli</groupId>
             <artifactId>picocli-spring-boot-starter</artifactId>
             <version>${picocli.version}</version>
+        </dependency>
+
+        <!-- stage 2: validates LLM output against prompts/extract_vN.schema.json -->
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+            <version>${json-schema-validator.version}</version>
         </dependency>
 
         <dependency>

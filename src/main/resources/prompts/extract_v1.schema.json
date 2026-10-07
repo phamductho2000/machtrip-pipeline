@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "extract_v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mentions"],
+  "properties": {
+    "mentions": {
+      "type": "array",
+      "maxItems": 25,
+      "items": {"$ref": "#/$defs/mention"}
+    }
+  },
+  "$defs": {
+    "mention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "name_raw", "name_confidence", "category", "text", "price_text", "price_vnd_min",
+        "price_vnd_max", "sentiment", "sponsored_signal", "energy", "tags", "best_for", "evidence"],
+      "properties": {
+        "kind": {"enum": ["place", "tip", "warning", "price", "transport", "status_update"]},
+        "name_raw": {"type": ["string", "null"]},
+        "name_confidence": {"enum": ["high", "medium", "low"]},
+        "category": {"enum": ["eat", "play", "stay", "transport", "other", null]},
+        "text": {"type": "string", "minLength": 1, "maxLength": 600},
+        "price_text": {"type": ["string", "null"]},
+        "price_vnd_min": {"type": ["integer", "null"], "minimum": 0},
+        "price_vnd_max": {"type": ["integer", "null"], "minimum": 0},
+        "sentiment": {"enum": ["positive", "neutral", "negative", "mixed"]},
+        "sponsored_signal": {"type": "boolean"},
+        "energy": {"type": ["number", "null"]},
+        "tags": {"type": "array", "items": {"type": "string"}},
+        "best_for": {
+          "type": "array",
+          "items": {"enum": ["couple", "family", "friends", "solo"]}
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["source", "t_start_sec", "comment_id", "quote"],
+          "properties": {
+            "source": {"enum": ["transcript", "caption", "comment", "location_tag"]},
+            "t_start_sec": {"type": ["number", "null"]},
+            "comment_id": {"type": ["string", "null"]},
+            "quote": {"type": "string", "minLength": 1, "maxLength": 200}
+          }
+        }
+      }
+    }
+  }
+}

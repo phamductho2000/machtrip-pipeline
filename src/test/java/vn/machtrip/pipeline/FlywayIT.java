@@ -15,7 +15,8 @@ class FlywayIT extends AbstractIT {
                 SELECT table_name FROM information_schema.tables WHERE table_schema = 'pipeline' ORDER BY 1""")
                 .query(String.class).list();
         assertThat(tables).contains("flyway_schema_history", "crawl_run", "job", "raw_item", "video",
-                "video_subtitle", "video_audio", "video_asr_queue", "comment");
+                "video_subtitle", "video_audio", "video_asr_queue", "comment", "video_extraction", "mention",
+                "mention_rejected");
         assertThat(count("SELECT count(*) FROM pipeline.flyway_schema_history WHERE success AND version = '1'"))
                 .isEqualTo(1);
     }

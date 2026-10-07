@@ -27,8 +27,8 @@ public abstract class AbstractIT {
 
     static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine")
             .withInitScript("sim-backend.sql");
-    static final WireMockServer WM = new WireMockServer(WireMockConfiguration.options().dynamicPort());
-    static final Path RAW_DIR;
+    protected static final WireMockServer WM = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+    protected static final Path RAW_DIR;
 
     static {
         PG.start();

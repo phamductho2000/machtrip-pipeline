@@ -4,8 +4,9 @@ spring:
   main:
     banner-mode: off
   config:
-    # Filters live in their own file (config/filters.yml); override the directory with --pipeline.config-dir
-    import: optional:file:${pipeline.config-dir:config}/filters.yml
+    # Filters and the closed tag list live in their own files (config/filters.yml, config/tags.yml);
+    # override the directory with --pipeline.config-dir
+    import: optional:file:${pipeline.config-dir:config}/filters.yml,optional:file:${pipeline.config-dir:config}/tags.yml
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/machtrip}
     username: ${SPRING_DATASOURCE_USERNAME:}
@@ -68,3 +69,34 @@ pipeline:
   comments:
     per-video-cap: 50
     total-items-cap: 1000
+
+# Stage 2 (extraction). All LLM calls go through the Genway gateway, never a provider directly.
+genway:
+  base-url: ${GENWAY_BASE_URL:}
+  api-key: ${GENWAY_API_KEY:}
+  kong-api-key: ${KONG_API_KEY:}   # key of the Kong gateway in front of Genway, sent as header "apikey"
+  read-timeout: 90s
+  connect-timeout: 10s
+  max-connect-retries: 2     # only connection errors / timeouts; HTTP 429/5xx are never retried (Genway does that)
+  initial-backoff: 500ms
+  system-prompt-as: message   # message = a role:system chat message, field = input.system (docs/genway-llm-api.md is silent)
+
+extract:
+  # TODO(user): set model to a model_key your Genway tenant may call (text models in the doc: claude-sonnet-5,
+  #             deepseek-flash, deepseek-v4-pro, gpt-4o), or pass --model. Left unset on purpose.
+  # TODO(user): set pricing in USD per token, e.g. input-per-token: 0.000003. Without it real runs refuse to start,
+  #             because the cost cap cannot be enforced.
+  # model:
+  # pricing:
+  #   input-per-token:
+  #   output-per-token:
+  prompt-version: v1
+  max-cost-usd-per-run: 0.50
+  max-videos-per-run: 50
+  concurrency: 2
+  max-comments: 30
+  max-comment-chars: 400
+  max-transcript-chars: 24000
+  chars-per-token: 3
+  max-output-tokens: 4096
+  structured-output: false   # the Genway doc describes no JSON-schema field, so output is JSON-by-prompt + code validation

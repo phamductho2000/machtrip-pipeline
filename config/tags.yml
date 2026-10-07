@@ -1,0 +1,30 @@
+# Closed list of tags the extraction model may use (anything else is stripped by code).
+# TODO(user): review this starter list for Da Lat. Keep ids lowercase kebab-case. Changing the list changes the prompt
+# text (and its hash) without a prompt version bump, so bump --prompt-version if you want comparable runs.
+extract:
+  tags:
+    - cloud-hunting
+    - cafe-view
+    - photo-spot
+    - street-food
+    - local-specialty
+    - restaurant
+    - bbq-hotpot
+    - night-market
+    - nightlife
+    - nature
+    - pine-forest
+    - waterfall
+    - trekking
+    - camping
+    - sunrise-sunset
+    - flower-garden
+    - homestay
+    - hotel-resort
+    - adventure-sports
+    - theme-park
+    - museum-culture
+    - shopping
+    - scenic-drive
+    - free-activity
+    - kid-friendly

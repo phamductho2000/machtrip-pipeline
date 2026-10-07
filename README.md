@@ -106,3 +106,49 @@ provider JSON as received.
 If the JVM fails with `Unable to establish loopback connection` (a very long user TEMP path breaks the AF_UNIX socket
 JDK 21 uses for NIO selectors), add `-Djdk.net.unixdomain.tmpdir=C:\tmp` to the `java` command. The Maven build sets
 this for the tests already.
+
+## Stage 2: extraction (LLM)
+
+For each video, an LLM reads what stage 1 collected and returns structured **mentions** (places, prices, tips,
+warnings, ...), each with an `evidence.quote` that code verifies against the input. All LLM calls go through the Genway
+gateway (`GENWAY_BASE_URL`, `GENWAY_API_KEY`); there is no provider SDK and no provider URL anywhere.
+
+`GenwayLlmClient` is implemented strictly from `docs/genway-llm-api.md`: `POST /api/generation` with
+`{model_key, call_type: "text", input: {messages, max_tokens}}`, `Authorization: Bearer`, and an `Idempotency-Key`
+header (`machtrip-pipeline-extract-<sha256 of video|prompt version|model|attempt>`; a `--force` run adds a nonce, because
+Genway answers a repeated key with the original request). Genway already retries provider 429/5xx, so HTTP errors and
+`success:false` bodies are final for the video; only connection errors and timeouts of our own call are retried (max 2).
+Two things the doc does not say and that the first real call must confirm: where the system prompt goes
+(`genway.system-prompt-as: message|field`, default `message`) and the shape of `data.response` for text models (a plain
+string, an OpenAI-style chat completion and an Anthropic-style message are recognised; anything else fails with a clear
+error). Text models listed in the doc: `claude-sonnet-5`, `deepseek-flash`, `deepseek-v4-pro`, `gpt-4o`; which of them
+your tenant may call is up to the Genway admin. Tests use `FakeLlmClient` and WireMock.
+
+| Command | What it does |
+|---|---|
+| `extract --limit N [--video id] [--dry-run] [--prompt-version v1] [--model m] [--force]` | extract videos not yet done for (prompt version, model); `--dry-run` prints the exact prompt hash, the exact user content and the estimated cost, with no network call |
+| `extract-report [--limit N] [--model m] [--out reports/]` | Markdown review file: caption/excerpts, accepted mentions with evidence, rejected mentions with reasons, totals |
+| `extract-eval --gold gold/extract_gold.jsonl [--model m]` | precision/recall of `place` mentions against your hand-labeled gold file (see `gold/README.md`) |
+| `extract-compare --models a,b --gold ... --limit N` | the same videos through several models; one table (precision, recall, rejected rate, tokens, cost) |
+| `extract-stats` | counts by status, kind, rejection reason; total cost |
+
+**Input** (`ExtractionInputBuilder`): `<caption>`, `<hashtags>`, `<location_tag>`, the trusted Vietnamese subtitle as
+`[mm:ss] text` lines, and the top comments by likes as `<comment id="..." likes="N">`. Everything from the video is
+untrusted: `<` and `>` inside it are replaced by `‹` `›`, so it cannot close or open a delimiter. No hashes, usernames
+or user ids are sent. Videos with neither a trusted transcript text nor comments are recorded as `skipped`
+(`no_transcript_no_comments`); videos in `video_asr_queue` are out of scope. The caption is not a column of
+`pipeline.video`; it is read from the raw provider JSON stage 1 keeps (`raw_item.raw_path`).
+
+**Validation** (code, after every answer): the JSON must match `prompts/extract_v1.schema.json` (one repair attempt,
+then the video is `failed`); a mention whose `evidence.quote` is not in the input text of its source (after whitespace
+and case normalisation, diacritics kept) is dropped into `mention_rejected`; tags outside `config/tags.yml` are
+removed; `energy` outside 0..1 (or not a place) becomes null; price numbers that do not match the digits of
+`price_text` become null.
+
+**Cost and safety**: `extract.max-cost-usd-per-run` (default 0.50) is checked *before* every call against a worst-case
+estimate (input tokens + `max-output-tokens`), and the run stops instead of exceeding it. Real runs refuse to start
+until `extract.model` and `extract.pricing.*` are set (both are TODO in `application.yml`). Concurrency defaults to 2.
+Each raw answer is stored gzip under `RAW_STORE_DIR/extractions/`.
+
+Prompts live in `src/main/resources/prompts/extract_vN.md` + `.schema.json`; the closed tag list is injected from
+`config/tags.yml` (starter list, to be reviewed).

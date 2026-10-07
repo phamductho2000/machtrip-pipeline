@@ -62,7 +62,7 @@ public class IngestService {
             throw new IllegalStateException("crawl_run " + run.id() + " has no dataset id");
         }
         Iterator<JsonNode> items = provider.iterItems(RunRef.of(job.apifyRunId(), run.datasetId()));
-        Summary s = process(run.id(), job.apifyRunId(), job.kind(), items, true);
+        Summary s = process(run.id(), job.apifyRunId(), job.kind(), items, true, null);
         log.info("Job {} ({}) ingested {} items", job.id(), job.kind(), s.items());
         return s;
     }
@@ -102,13 +102,15 @@ public class IngestService {
                     }
                 }
             };
-            return process(crawlRunId, runId, kind, items, false);
+            // raw_path points at the real export, so later stages (extraction) can read fields not kept in columns
+            return process(crawlRunId, runId, kind, items, false, "file:" + file.toAbsolutePath());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
     }
 
-    private Summary process(long crawlRunId, String runName, String kind, Iterator<JsonNode> items, boolean live) {
+    private Summary process(long crawlRunId, String runName, String kind, Iterator<JsonNode> items, boolean live,
+                           String offlineRawRef) {
         int count = 0;
         int ingested = 0;
         if ("search".equals(kind)) {
@@ -125,7 +127,7 @@ public class IngestService {
             } else {
                 while (items.hasNext()) {
                     count++;
-                    ingested += videos.ingest(crawlRunId, items.next(), "file:" + runName, false) != null ? 1 : 0;
+                    ingested += videos.ingest(crawlRunId, items.next(), offlineRawRef, false) != null ? 1 : 0;
                 }
             }
         } else {
