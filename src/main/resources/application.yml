@@ -80,6 +80,7 @@ genway:
   max-connect-retries: 2     # only connection errors / timeouts; HTTP 429/5xx are never retried (Genway does that)
   initial-backoff: 500ms
   system-prompt-as: message   # message = a role:system chat message, field = input.system (docs/genway-llm-api.md is silent)
+  thinking: ${GENWAY_THINKING:}   # disabled|enabled -> input.thinking.type; empty = send nothing (doc lists it only for deepseek-*)
 
 extract:
   # TODO(user): set model to a model_key your Genway tenant may call (text models in the doc: claude-sonnet-5,

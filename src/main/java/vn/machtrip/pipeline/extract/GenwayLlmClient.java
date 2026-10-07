@@ -83,6 +83,9 @@ public class GenwayLlmClient implements LlmClient {
         }
         messages.addObject().put("role", "user").put("content", r.user());
         input.put("max_tokens", r.maxOutputTokens());
+        if (!props.thinking().isBlank()) {
+            input.putObject("thinking").put("type", props.thinking());
+        }
         return body;
     }
 
@@ -107,11 +110,34 @@ public class GenwayLlmClient implements LlmClient {
         String text = textOf(response);
         if (text == null) {
             throw new LlmException("Genway data.response has an unrecognised shape (expected a string, an "
-                    + "OpenAI-style chat completion or an Anthropic-style message)" + requestId(root));
+                    + "OpenAI-style chat completion or an Anthropic-style message). Shape (no values): "
+                    + shapeOf(response) + requestId(root));
         }
         JsonNode usage = response.path("usage");
         return new LlmResult(text, tokens(usage, "prompt_tokens", "input_tokens"),
                 tokens(usage, "completion_tokens", "output_tokens"), response.path("model").asText(request.model()));
+    }
+
+    /**
+     * Values-free description of a response, for error messages: key names and JSON types only, plus the block types
+     * of a {@code content} array (e.g. {@code thinking}, {@code text}). Never includes any text of the response.
+     */
+    static String shapeOf(JsonNode node) {
+        if (node.isObject()) {
+            List<String> keys = new ArrayList<>();
+            node.fields().forEachRemaining(e -> {
+                JsonNode v = e.getValue();
+                String t = v.getNodeType().toString().toLowerCase();
+                if (v.isArray() && "content".equals(e.getKey())) {
+                    List<String> types = new ArrayList<>();
+                    v.forEach(b -> types.add(b.path("type").asText(b.getNodeType().toString().toLowerCase())));
+                    t = "array" + types;
+                }
+                keys.add(e.getKey() + ":" + t);
+            });
+            return "{" + String.join(", ", keys) + "}";
+        }
+        return node.getNodeType().toString().toLowerCase();
     }
 
     private static String textOf(JsonNode response) {

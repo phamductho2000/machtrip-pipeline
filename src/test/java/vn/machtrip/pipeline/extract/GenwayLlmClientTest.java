@@ -53,7 +53,7 @@ class GenwayLlmClientTest {
 
     private GenwayLlmClient client(String systemPromptAs) {
         return new GenwayLlmClient(new GenwayProperties(wm.baseUrl(), KEY, Duration.ofMillis(300),
-                Duration.ofSeconds(2), 2, Duration.ofMillis(5), systemPromptAs, KONG), mapper);
+                Duration.ofSeconds(2), 2, Duration.ofMillis(5), systemPromptAs, KONG, ""), mapper);
     }
 
     private static void stub(int status, String body) {
@@ -100,7 +100,7 @@ class GenwayLlmClientTest {
         wm.resetAll();
         stub(200, ok("\"hi\""));
         new GenwayLlmClient(new GenwayProperties(wm.baseUrl(), KEY, Duration.ofMillis(300), Duration.ofSeconds(2), 2,
-                Duration.ofMillis(5), "message", ""), mapper).complete(REQUEST);
+                Duration.ofMillis(5), "message", "", ""), mapper).complete(REQUEST);
         wm.verify(1, postRequestedFor(urlPathEqualTo("/api/generation")).withoutHeader("apikey"));
 
         wm.resetAll();
@@ -119,6 +119,21 @@ class GenwayLlmClientTest {
                 .withRequestBody(matchingJsonPath("$.input.system", equalTo("SYSTEM RULES")))
                 .withRequestBody(matchingJsonPath("$.input.messages.length()", equalTo("1")))
                 .withRequestBody(matchingJsonPath("$.input.messages[0].role", equalTo("user"))));
+    }
+
+    @Test
+    void thinkingIsOnlySentWhenConfigured() {
+        stub(200, ok("\"hello\""));
+
+        client("message").complete(REQUEST);
+        new GenwayLlmClient(new GenwayProperties(wm.baseUrl(), KEY, Duration.ofMillis(300), Duration.ofSeconds(2), 2,
+                Duration.ofMillis(5), "message", KONG, "disabled"), mapper).complete(REQUEST);
+
+        wm.verify(1, postRequestedFor(urlPathEqualTo("/api/generation"))
+                .withRequestBody(matchingJsonPath("$.input[?(@.thinking)]")));
+        wm.verify(1, postRequestedFor(urlPathEqualTo("/api/generation"))
+                .withRequestBody(matchingJsonPath("$.input.thinking.type", equalTo("disabled"))));
+        wm.verify(2, postRequestedFor(urlPathEqualTo("/api/generation")));
     }
 
     @Test
@@ -221,11 +236,11 @@ class GenwayLlmClientTest {
     @Test
     void refusesToCallWithoutBaseUrlAndKey() {
         var noKey = new GenwayLlmClient(new GenwayProperties("http://x", "", Duration.ofSeconds(1),
-                Duration.ofSeconds(1), 2, Duration.ofMillis(5), "message", KONG), mapper);
+                Duration.ofSeconds(1), 2, Duration.ofMillis(5), "message", KONG, ""), mapper);
 
         assertThatThrownBy(() -> noKey.complete(REQUEST)).hasMessageContaining("GENWAY_BASE_URL")
                 .hasMessageContaining("GENWAY_API_KEY");
-        assertThat(new GenwayProperties("https://g", KEY, null, null, 2, null, "message", KONG).toString())
+        assertThat(new GenwayProperties("https://g", KEY, null, null, 2, null, "message", KONG, "").toString())
                 .doesNotContain(KEY).doesNotContain(KONG);
     }
 }
